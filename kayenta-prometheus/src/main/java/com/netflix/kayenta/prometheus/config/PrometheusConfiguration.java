@@ -28,6 +28,8 @@ import com.netflix.kayenta.prometheus.service.PrometheusRemoteService;
 import com.netflix.kayenta.retrofit.config.RetrofitClientFactory;
 import com.netflix.kayenta.security.AccountCredentials;
 import com.netflix.kayenta.security.AccountCredentialsRepository;
+import com.netflix.spinnaker.credentials.definition.AbstractCredentialsLoader;
+import com.netflix.spinnaker.credentials.definition.CredentialsParser;
 import com.squareup.okhttp.OkHttpClient;
 import java.io.IOException;
 import java.util.List;
@@ -66,6 +68,28 @@ public class PrometheusConfiguration {
   PrometheusMetricDescriptorsCache prometheusMetricDescriptorsCache(
       AccountCredentialsRepository accountCredentialsRepository) {
     return new PrometheusMetricDescriptorsCache(accountCredentialsRepository);
+  }
+
+  @Bean
+  CredentialsParser<PrometheusManagedAccount, PrometheusNamedAccountCredentials>
+      prometheusCredentialsParser(
+          PrometheusResponseConverter prometheusConverter,
+          RetrofitClientFactory retrofitClientFactory,
+          OkHttpClient okHttpClient) {
+    return new PrometheusParser(prometheusConverter, retrofitClientFactory, okHttpClient);
+  }
+
+  @Bean
+  AbstractCredentialsLoader<? extends AccountCredentials> prometheusCredentialsLoader(
+      CredentialsParser<PrometheusManagedAccount, PrometheusNamedAccountCredentials>
+          prometheusCredentialsParser,
+      PrometheusConfigurationProperties prometheusConfigurationProperties,
+      AccountCredentialsRepository accountCredentialsRepository) {
+    return new PrometheusCredentialsLoader<
+        PrometheusManagedAccount, PrometheusNamedAccountCredentials>(
+        prometheusConfigurationProperties,
+        prometheusCredentialsParser,
+        accountCredentialsRepository);
   }
 
   @Bean

@@ -18,6 +18,7 @@ package com.netflix.kayenta.prometheus.config;
 
 import com.netflix.kayenta.retrofit.config.RemoteService;
 import com.netflix.kayenta.security.AccountCredentials;
+import com.netflix.spinnaker.credentials.definition.CredentialsDefinition;
 import java.util.Collections;
 import java.util.List;
 import javax.validation.constraints.NotNull;
@@ -26,7 +27,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Data
-public class PrometheusManagedAccount {
+public class PrometheusManagedAccount implements CredentialsDefinition {
 
   @NotNull private String name;
 

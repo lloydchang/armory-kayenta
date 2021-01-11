@@ -17,10 +17,11 @@
 package com.netflix.kayenta.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.netflix.spinnaker.credentials.Credentials;
 import java.util.Collections;
 import java.util.List;
 
-public interface AccountCredentials<T> {
+public interface AccountCredentials<T> extends Credentials {
   String getName();
 
   String getType();

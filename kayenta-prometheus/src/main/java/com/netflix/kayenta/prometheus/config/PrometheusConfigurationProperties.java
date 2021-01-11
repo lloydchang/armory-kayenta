@@ -16,13 +16,15 @@
 
 package com.netflix.kayenta.prometheus.config;
 
+import com.netflix.spinnaker.credentials.definition.CredentialsDefinitionSource;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
-public class PrometheusConfigurationProperties {
+public class PrometheusConfigurationProperties
+    implements CredentialsDefinitionSource<PrometheusManagedAccount> {
 
   @Getter @Setter private long metadataCachingIntervalMS = Duration.ofSeconds(60).toMillis();
 
@@ -54,4 +56,9 @@ public class PrometheusConfigurationProperties {
   @Getter @Setter private String scopeLabel = "instance";
 
   @Getter private List<PrometheusManagedAccount> accounts = new ArrayList<>();
+
+  @Override
+  public List<PrometheusManagedAccount> getCredentialsDefinitions() {
+    return this.getAccounts();
+  }
 }
