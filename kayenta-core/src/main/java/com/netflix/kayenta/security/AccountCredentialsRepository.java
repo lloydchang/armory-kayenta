@@ -16,21 +16,19 @@
 
 package com.netflix.kayenta.security;
 
-import com.netflix.spinnaker.credentials.CredentialsRepository;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.util.StringUtils;
 
-public interface AccountCredentialsRepository extends CredentialsRepository<AccountCredentials> {
+public interface AccountCredentialsRepository {
 
-  <T extends AccountCredentials> Optional<T> getOptionalOne(String accountName);
+  <T extends AccountCredentials> Optional<T> getOne(String accountName);
 
-  <T extends AccountCredentials> T getRequiredOne(String accountName);
-
-  Optional<AccountCredentials> getOne(AccountCredentials.Type credentialsType);
-
-  AccountCredentials save(String name, AccountCredentials credentials);
+  default <T extends AccountCredentials> T getRequiredOne(String accountName) {
+    Optional<T> one = getOne(accountName);
+    return one.orElseThrow(
+        () -> new IllegalArgumentException("Unable to resolve account " + accountName + "."));
+  }
 
   default AccountCredentials getRequiredOneBy(
       String accountName, AccountCredentials.Type accountType) {
@@ -45,9 +43,11 @@ public interface AccountCredentialsRepository extends CredentialsRepository<Acco
     }
   }
 
-  default Set<AccountCredentials> getAllOf(AccountCredentials.Type credentialsType) {
-    return getAll().stream()
-        .filter(credentials -> credentials.getSupportedTypes().contains(credentialsType))
-        .collect(Collectors.toSet());
-  }
+  Set<AccountCredentials> getAllOf(AccountCredentials.Type credentialsType);
+
+  Optional<AccountCredentials> getOne(AccountCredentials.Type credentialsType);
+
+  Set<? extends AccountCredentials> getAll();
+
+  AccountCredentials save(String name, AccountCredentials credentials);
 }

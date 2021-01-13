@@ -29,21 +29,29 @@ import com.netflix.kayenta.metrics.MapBackedMetricsServiceRepository;
 import com.netflix.kayenta.metrics.MetricSetMixerService;
 import com.netflix.kayenta.metrics.MetricsRetryConfigurationProperties;
 import com.netflix.kayenta.metrics.MetricsServiceRepository;
-import com.netflix.kayenta.security.AccountCredentialsRepository;
-import com.netflix.kayenta.security.MapBackedAccountCredentialsRepository;
+import com.netflix.kayenta.security.*;
 import com.netflix.kayenta.service.MetricSetPairListService;
 import com.netflix.kayenta.storage.MapBackedStorageServiceRepository;
 import com.netflix.kayenta.storage.StorageService;
 import com.netflix.kayenta.storage.StorageServiceRepository;
+import com.netflix.spinnaker.credentials.CompositeCredentialsRepository;
+import com.netflix.spinnaker.credentials.CredentialsTypeBaseConfiguration;
+import com.netflix.spinnaker.credentials.CredentialsTypeProperties;
+import com.netflix.spinnaker.credentials.definition.AbstractCredentialsLoader;
+import com.netflix.spinnaker.credentials.definition.CredentialsDefinition;
+import com.netflix.spinnaker.credentials.poller.PollerConfiguration;
+import com.netflix.spinnaker.credentials.poller.PollerConfigurationProperties;
 import com.netflix.spinnaker.kork.jackson.ObjectMapperSubtypeConfigurer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -61,13 +69,17 @@ import org.springframework.context.annotation.Primary;
   "com.netflix.kayenta.persistence.config",
   "com.netflix.kayenta.retrofit.config"
 })
-@EnableConfigurationProperties(MetricsRetryConfigurationProperties.class)
+@EnableConfigurationProperties({
+  MetricsRetryConfigurationProperties.class,
+  PollerConfigurationProperties.class
+})
 public class KayentaConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(AccountCredentialsRepository.class)
-  AccountCredentialsRepository accountCredentialsRepository() {
-    return new MapBackedAccountCredentialsRepository();
+  AccountCredentialsRepository accountCredentialsRepository(
+      CompositeCredentialsRepository<AccountCredentials> compositeRepository) {
+    return new MapBackedAccountCredentialsRepository(compositeRepository);
   }
 
   @Bean
@@ -151,5 +163,25 @@ public class KayentaConfiguration {
   @ConfigurationProperties(prefix = "kayenta.serialization")
   KayentaSerializationConfigurationProperties kayentaSerializationConfigurationProperties() {
     return new KayentaSerializationConfigurationProperties();
+  }
+
+  @Bean
+  CompositeCredentialsRepository<AccountCredentials> compositeCredentialsRepository(
+      ApplicationContext applicationContext,
+      List<CredentialsTypeProperties<? extends AccountCredentials, ? extends CredentialsDefinition>>
+          credentialsTypes) {
+    return new CompositeCredentialsRepository<AccountCredentials>(
+        credentialsTypes.stream()
+            .map(c -> new CredentialsTypeBaseConfiguration<>(applicationContext, c))
+            .peek(CredentialsTypeBaseConfiguration::afterPropertiesSet)
+            .map(CredentialsTypeBaseConfiguration::getCredentialsRepository)
+            .collect(Collectors.toList()));
+  }
+
+  @Bean
+  PollerConfiguration pollerConfiguration(
+      List<AbstractCredentialsLoader<?>> pollers,
+      PollerConfigurationProperties pollerConfigurationProperties) {
+    return new PollerConfiguration(pollerConfigurationProperties, pollers);
   }
 }

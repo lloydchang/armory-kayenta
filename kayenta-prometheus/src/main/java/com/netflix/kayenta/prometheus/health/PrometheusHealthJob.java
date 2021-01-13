@@ -56,7 +56,7 @@ public class PrometheusHealthJob {
             .map(
                 account -> {
                   String name = account.getName();
-                  return accountCredentialsRepository.getOptionalOne(name);
+                  return accountCredentialsRepository.getOne(name);
                 })
             .filter(Optional::isPresent)
             .map(Optional::get)

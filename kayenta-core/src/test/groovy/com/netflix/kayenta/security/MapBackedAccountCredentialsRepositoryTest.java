@@ -34,7 +34,7 @@ public class MapBackedAccountCredentialsRepositoryTest {
 
   @Test
   public void getOne_returnsEmptyIfAccountNotPresent() {
-    assertThat(repository.getOptionalOne("account")).isEmpty();
+    assertThat(repository.getOne("account")).isEmpty();
   }
 
   @Test
@@ -42,7 +42,7 @@ public class MapBackedAccountCredentialsRepositoryTest {
     AccountCredentials account = namedAccount("account1");
     repository.save("account1", account);
 
-    assertThat(repository.getOptionalOne("account1")).hasValue(account);
+    assertThat(repository.getOne("account1")).hasValue(account);
   }
 
   @Test

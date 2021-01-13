@@ -66,8 +66,6 @@ public class PrometheusParser
 
       if (!CollectionUtils.isEmpty(credentials.getSupportedTypes())) {
         if (credentials.getSupportedTypes().contains(AccountCredentials.Type.METRICS_STORE)) {
-          // TODO
-          // Here we should build the connection to Prometheus
           PrometheusRemoteService prometheusRemoteService =
               retrofitClientFactory.createClient(
                   PrometheusRemoteService.class,

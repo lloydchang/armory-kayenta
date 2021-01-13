@@ -57,7 +57,7 @@ public class PrometheusHealthJobTest {
                 getPrometheusManagedAccount(PROM_ACCOUNT_1),
                 getPrometheusManagedAccount(PROM_ACCOUNT_2)));
 
-    when(accountCredentialsRepository.getOptionalOne(PROM_ACCOUNT_1))
+    when(accountCredentialsRepository.getOne(PROM_ACCOUNT_1))
         .thenReturn(
             Optional.of(
                 PrometheusNamedAccountCredentials.builder()
@@ -65,7 +65,7 @@ public class PrometheusHealthJobTest {
                     .prometheusRemoteService(PROM_REMOTE_1)
                     .build()));
 
-    when(accountCredentialsRepository.getOptionalOne(PROM_ACCOUNT_2))
+    when(accountCredentialsRepository.getOne(PROM_ACCOUNT_2))
         .thenReturn(
             Optional.of(
                 PrometheusNamedAccountCredentials.builder()

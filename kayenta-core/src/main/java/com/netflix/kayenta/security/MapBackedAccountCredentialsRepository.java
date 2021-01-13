@@ -16,67 +16,68 @@
 
 package com.netflix.kayenta.security;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import com.netflix.spinnaker.credentials.CompositeCredentialsRepository;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class MapBackedAccountCredentialsRepository implements AccountCredentialsRepository {
 
-  private final Map<String, AccountCredentials> accountNameToCredentialsMap =
-      new ConcurrentHashMap<>();
+  private final Map<String, AccountCredentials> accountNameToCredentialsMap;
+  private final CompositeCredentialsRepository<AccountCredentials> compositeRepository;
 
-  @Override
-  public AccountCredentials getOne(String key) {
-    return accountNameToCredentialsMap.get(key);
+  public MapBackedAccountCredentialsRepository() {
+    this.accountNameToCredentialsMap = new ConcurrentHashMap<>();
+    this.compositeRepository = new CompositeCredentialsRepository<>(Collections.emptyList());
   }
 
-  @Override
-  public boolean has(String name) {
-    return accountNameToCredentialsMap.containsKey(name);
-  }
-
-  @Override
-  public Set<AccountCredentials> getAll() {
-    return new HashSet<>(accountNameToCredentialsMap.values());
-  }
-
-  @Override
-  public void save(AccountCredentials credentials) {
-    accountNameToCredentialsMap.put(credentials.getName(), credentials);
-  }
-
-  @Override
-  public void delete(String key) {
-    accountNameToCredentialsMap.remove(key);
-  }
-
-  @Override
-  public String getType() {
-    return "";
-  }
-
-  @Override
-  public AccountCredentials getRequiredOne(String accountName) {
-    Optional<AccountCredentials> one = Optional.ofNullable(getOne(accountName));
-    return one.orElseThrow(
-        () -> new IllegalArgumentException("Unable to resolve account " + accountName + "."));
+  public MapBackedAccountCredentialsRepository(
+      CompositeCredentialsRepository<AccountCredentials> compositeRepository) {
+    this.accountNameToCredentialsMap = new ConcurrentHashMap<>();
+    this.compositeRepository = compositeRepository;
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T extends AccountCredentials> Optional<T> getOptionalOne(String accountName) {
-    return Optional.ofNullable((T) accountNameToCredentialsMap.get(accountName));
+  public <T extends AccountCredentials> Optional<T> getOne(String accountName) {
+    AccountCredentials accountCredentials = accountNameToCredentialsMap.get(accountName);
+    if (accountCredentials == null) {
+      accountCredentials = compositeRepository.getFirstCredentialsWithName(accountName);
+    }
+    return Optional.ofNullable((T) accountCredentials);
+  }
+
+  @Override
+  public Set<AccountCredentials> getAllOf(AccountCredentials.Type credentialsType) {
+    Set<AccountCredentials> set =
+        getAll().stream()
+            .filter(credentials -> credentials.getSupportedTypes().contains(credentialsType))
+            .collect(Collectors.toSet());
+    return set;
   }
 
   @Override
   public Optional<AccountCredentials> getOne(AccountCredentials.Type credentialsType) {
-    return accountNameToCredentialsMap.values().stream()
+    Optional<AccountCredentials> accountCredentials =
+        accountNameToCredentialsMap.values().stream()
+            .filter(a -> a.getSupportedTypes().contains(credentialsType))
+            .findFirst();
+    if (accountCredentials.isPresent()) {
+      return accountCredentials;
+    }
+    return compositeRepository.getAllCredentials().stream()
         .filter(a -> a.getSupportedTypes().contains(credentialsType))
         .findFirst();
   }
 
+  @Override
+  public Set<AccountCredentials> getAll() {
+    Set<AccountCredentials> all = new HashSet<>(accountNameToCredentialsMap.values());
+    all.addAll(compositeRepository.getAllCredentials());
+    return all;
+  }
+
+  @Override
   @Deprecated
   public AccountCredentials save(String name, AccountCredentials credentials) {
     return accountNameToCredentialsMap.put(credentials.getName(), credentials);
