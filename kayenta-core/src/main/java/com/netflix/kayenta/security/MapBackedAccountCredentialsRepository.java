@@ -82,4 +82,9 @@ public class MapBackedAccountCredentialsRepository implements AccountCredentials
   public AccountCredentials save(String name, AccountCredentials credentials) {
     return accountNameToCredentialsMap.put(credentials.getName(), credentials);
   }
+
+  @Override
+  public AccountCredentials getRequiredOne(String accountName, String type) {
+    return compositeRepository.getCredentials(accountName, type);
+  }
 }

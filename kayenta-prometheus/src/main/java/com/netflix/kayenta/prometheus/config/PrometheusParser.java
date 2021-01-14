@@ -24,7 +24,6 @@ import com.netflix.kayenta.retrofit.config.RetrofitClientFactory;
 import com.netflix.kayenta.security.AccountCredentials;
 import com.netflix.spinnaker.credentials.definition.CredentialsParser;
 import com.squareup.okhttp.OkHttpClient;
-import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
@@ -49,41 +48,37 @@ public class PrometheusParser
   @Nullable
   @Override
   public PrometheusNamedAccountCredentials parse(PrometheusManagedAccount credentials) {
-    PrometheusNamedAccountCredentials prometheusNamedAccountCredentials = null;
-    try {
-      PrometheusCredentials prometheusCredentials =
-          PrometheusCredentials.builder()
-              .username(credentials.getUsername())
-              .password(credentials.getPassword())
-              .usernamePasswordFile(credentials.getUsernamePasswordFile())
-              .build();
-      PrometheusNamedAccountCredentials.PrometheusNamedAccountCredentialsBuilder
-          prometheusNamedAccountCredentialsBuilder =
-              PrometheusNamedAccountCredentials.builder()
-                  .name(credentials.getName())
-                  .endpoint(credentials.getEndpoint())
-                  .credentials(prometheusCredentials);
+    PrometheusCredentials prometheusCredentials =
+        PrometheusCredentials.builder()
+            .username(credentials.getUsername())
+            .password(credentials.getPassword())
+            .usernamePasswordFile(credentials.getUsernamePasswordFile())
+            .build();
+    PrometheusNamedAccountCredentials.PrometheusNamedAccountCredentialsBuilder
+        prometheusNamedAccountCredentialsBuilder =
+            PrometheusNamedAccountCredentials.builder()
+                .name(credentials.getName())
+                .endpoint(credentials.getEndpoint())
+                .credentials(prometheusCredentials);
 
-      if (!CollectionUtils.isEmpty(credentials.getSupportedTypes())) {
-        if (credentials.getSupportedTypes().contains(AccountCredentials.Type.METRICS_STORE)) {
-          PrometheusRemoteService prometheusRemoteService =
-              retrofitClientFactory.createClient(
-                  PrometheusRemoteService.class,
-                  prometheusConverter,
-                  credentials.getEndpoint(),
-                  okHttpClient,
-                  credentials.getUsername(),
-                  credentials.getPassword(),
-                  credentials.getUsernamePasswordFile());
+    if (!CollectionUtils.isEmpty(credentials.getSupportedTypes())) {
+      if (credentials.getSupportedTypes().contains(AccountCredentials.Type.METRICS_STORE)) {
+        PrometheusRemoteService prometheusRemoteService =
+            retrofitClientFactory.createClient(
+                PrometheusRemoteService.class,
+                prometheusConverter,
+                credentials.getEndpoint(),
+                okHttpClient,
+                credentials.getUsername(),
+                credentials.getPassword(),
+                credentials.getUsernamePasswordFile());
 
-          prometheusNamedAccountCredentialsBuilder.prometheusRemoteService(prometheusRemoteService);
-        }
-        prometheusNamedAccountCredentialsBuilder.supportedTypes(credentials.getSupportedTypes());
+        prometheusNamedAccountCredentialsBuilder.prometheusRemoteService(prometheusRemoteService);
       }
-      prometheusNamedAccountCredentials = prometheusNamedAccountCredentialsBuilder.build();
-    } catch (IOException e) {
-      log.error("Problem registering Prometheus account {}:", credentials.getName(), e);
+      prometheusNamedAccountCredentialsBuilder.supportedTypes(credentials.getSupportedTypes());
     }
+    PrometheusNamedAccountCredentials prometheusNamedAccountCredentials =
+        prometheusNamedAccountCredentialsBuilder.build();
     return prometheusNamedAccountCredentials;
   }
 }

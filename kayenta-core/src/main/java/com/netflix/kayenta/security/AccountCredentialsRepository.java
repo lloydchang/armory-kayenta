@@ -50,4 +50,6 @@ public interface AccountCredentialsRepository {
   Set<? extends AccountCredentials> getAll();
 
   AccountCredentials save(String name, AccountCredentials credentials);
+
+  AccountCredentials getRequiredOne(String accountName, String type);
 }
