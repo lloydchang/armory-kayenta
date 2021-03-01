@@ -62,12 +62,11 @@ public class MapBackedAccountCredentialsRepository implements AccountCredentials
         accountNameToCredentialsMap.values().stream()
             .filter(a -> a.getSupportedTypes().contains(credentialsType))
             .findFirst();
-    if (accountCredentials.isPresent()) {
-      return accountCredentials;
-    }
-    return compositeRepository.getAllCredentials().stream()
-        .filter(a -> a.getSupportedTypes().contains(credentialsType))
-        .findFirst();
+    return accountCredentials.or(
+        () ->
+            compositeRepository.getAllCredentials().stream()
+                .filter(a -> a.getSupportedTypes().contains(credentialsType))
+                .findFirst());
   }
 
   @Override
